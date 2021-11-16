@@ -1,0 +1,18 @@
+# 内存数据库和 Spring 数据源配置.
+spring:
+  datasource:
+    url: jdbc:hsqldb:mem:dbtest
+    username: sa
+    password: 123456
+    driver-class-name: org.hsqldb.jdbcDriver
+    # blink-pool 的完整配置参数以供参考，通常情况下默认不需要做任何配置.
+    blink-pool:
+      pool-name: my-pool
+      min-idle: 5
+      max-pool-size: 30
+      idle-timeout: 30
+      max-lifetime: 1200000
+      borrow-timeout: 20
+      check-interval: 500
+      check-timeout: 3
+      check-sql:

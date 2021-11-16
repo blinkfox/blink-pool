@@ -22,6 +22,11 @@ import lombok.extern.slf4j.Slf4j;
 public class BlinkConfig {
 
     /**
+     * 默认的连接池名称.
+     */
+    public static final String DEFAULT_POOL_NAME = "blink-pool";
+
+    /**
      * 一个简单的用于检查连接是否有效的 SQL 语句.
      *
      * <p>注意：除非特殊情况不建议设置 {@link #checkSql} 的属性值.</p>
@@ -82,8 +87,6 @@ public class BlinkConfig {
      * 默认的借用连接的超时时间常量，单位毫秒 (ms).
      */
     public static final int DEFAULT_BORROW_TIMEOUT = 30000;
-
-    private static final String DEFAULT_POOL_NAME = "blink-pool";
 
     /**
      * 连接池的名称.
