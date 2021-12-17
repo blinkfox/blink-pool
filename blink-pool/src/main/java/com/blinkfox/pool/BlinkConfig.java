@@ -126,7 +126,7 @@ public class BlinkConfig {
     private int maxPoolSize = DEFAULT_MAX_POOL_SIZE;
 
     /**
-     * 允许多余的连接在池中闲置的最长时间，单位秒（s）.
+     * 允许多余的连接在池中闲置的最少时间，单位秒（s）.
      */
     private int idleTimeout;
 

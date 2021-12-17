@@ -10,6 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,11 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 class BlinkPool {
+
+    /**
+     * 循环定时检查是否有多余空闲连接的时间间隔秒数.
+     */
+    private static final int CHECK_PERIOD_TIME_SECONDS = 5;
 
     /**
      * 连接池配置信息.
@@ -43,6 +49,12 @@ class BlinkPool {
      */
     @Getter
     private boolean closed;
+
+    /**
+     * 连接池中连接的最后活动时间，包括了借用或归还等操作的最后操作时间，用于计算连接池中的连接是否闲置了较长时间.
+     */
+    @Getter
+    private final AtomicLong lastActiveNanoTime;
 
     /**
      * 从连接池中正在被借用中的连接数，用来表示正在被外部使用的连接数.
@@ -70,6 +82,7 @@ class BlinkPool {
         this.config = blinkConfig;
         this.stats = new PoolStatistics();
         this.borrowing = new LongAdder();
+        this.lastActiveNanoTime = new AtomicLong(System.nanoTime());
         this.connectionQueue = new ArrayBlockingQueue<>(blinkConfig.getMaxPoolSize());
         this.scheduledExecutor = new ScheduledThreadPoolExecutor(
                 1, r -> new Thread(r, "blink-pool"),
@@ -213,20 +226,26 @@ class BlinkPool {
      * 启动维持最小可用空闲连接的定时任务.
      */
     public void startKeepIdleConnectionsJob() {
-        long periodTime = this.config.getIdleTimeout();
         this.scheduledExecutor.scheduleWithFixedDelay(() -> {
             try {
                 doCreateOrClearIdleConnections();
             } catch (Exception e) {
                 log.error("[blink-pool 错误] 定时维持连接池中的最小空闲连接时出错！", e);
             }
-        }, periodTime, periodTime, TimeUnit.SECONDS);
+        }, CHECK_PERIOD_TIME_SECONDS, CHECK_PERIOD_TIME_SECONDS, TimeUnit.SECONDS);
     }
 
     /**
      * 创建或清除多余的空闲连接.
      */
     private void doCreateOrClearIdleConnections() {
+        // 如果当前时间与连接的最后活动时间差小于了配置的闲置时间，就不会去清理空闲连接.
+        long periodTime = this.config.getIdleTimeout();
+        if ((System.nanoTime() - this.lastActiveNanoTime.get()) < (periodTime * 1e9)) {
+            return;
+        }
+
+        // 开始尝试清理连接池中多余的空闲连接.
         if (log.isDebugEnabled()) {
             log.debug("[blink-pool 提示] 开始进入了用于维持最小可用空闲连接的定时任务方法中 ...");
         }

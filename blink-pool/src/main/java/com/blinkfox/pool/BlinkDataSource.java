@@ -71,6 +71,7 @@ public class BlinkDataSource implements DataSource, Closeable {
             this.pool.getStats().getBorrowSumNanoTime().add(diffNanoTime);
         }
         connection.setLastBorrowNanoTime(endNanoTime);
+        this.pool.getLastActiveNanoTime().lazySet(endNanoTime);
 
         // 将正在使用的借用连接数加 1.
         this.pool.getBorrowing().increment();

@@ -94,7 +94,9 @@ public class BlinkConnection implements Connection {
     @Override
     public void close() throws SQLException {
         // 统计连接借用(使用)时间.
-        long diffNanoTime = System.nanoTime() - this.lastBorrowNanoTime;
+        long closeNanoTime =  System.nanoTime();
+        this.pool.getLastActiveNanoTime().lazySet(closeNanoTime);
+        long diffNanoTime = closeNanoTime - this.lastBorrowNanoTime;
         if (diffNanoTime > 0) {
             this.pool.getStats().getUsedSumNanoTime().add(diffNanoTime);
         }
