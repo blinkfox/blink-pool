@@ -62,7 +62,8 @@ class PostgresDataSourceTest {
                 .setDriverClassName(DRIVER)
                 .setUsername(USERNAME)
                 .setPassword(PASSWORD)
-                .setMinIdle(MIN_IDLE));
+                .setMinIdle(MIN_IDLE)
+                .setAsyncInitIdleConnections(false));
         log.info("创建数据库连接池完成，耗时:【{} ms】", System.currentTimeMillis() - startTime);
         Assertions.assertEquals(MIN_IDLE, blinkDataSource.getCurrentPoolSize());
         Assertions.assertEquals(BlinkConfig.DEFAULT_MAX_POOL_SIZE, blinkDataSource.getConfig().getMaxPoolSize());
@@ -121,7 +122,8 @@ class PostgresDataSourceTest {
                 .setUsername(USERNAME)
                 .setPassword(PASSWORD)
                 .setMinIdle(minIdle)
-                .setMaxPoolSize(maxSize));
+                .setMaxPoolSize(maxSize)
+                .setAsyncInitIdleConnections(false));
         Assertions.assertEquals(minIdle, database.getConfig().getMinIdle());
         Assertions.assertEquals(maxSize, database.getConfig().getMaxPoolSize());
         Assertions.assertEquals(minIdle, database.getCurrentPoolSize());

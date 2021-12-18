@@ -103,18 +103,34 @@ class BlinkPool {
         // 先加载驱动类的 class，然后在初始化创建数据库连接池中的最小空闲连接.
         this.loadDriverClass();
 
-        // 初始化创建一个连接，如果能创建成功，且最小闲置数大于 1 的话，为了加快连接池的创建和初始化，开启异步线程初始化更多的初始空闲连接.
+        // 初始化连接池中的空闲连接.
+        this.initCreateIdleConnections();
+
+        // 启动维持连接池最小闲置连接数的定时任务，对于较多的连接需要清除，对于较少的连接需要创建.
+        this.startKeepIdleConnectionsJob();
+    }
+
+    /**
+     * 初始化创建连接池中的空闲连接.
+     *
+     * @since 1.0.1
+     */
+    private void initCreateIdleConnections() {
+        // 初始化创建一个连接.
         try {
             this.createBlinkConnectionIntoPool();
         } catch (SQLException e) {
             throw new BlinkPoolException("[blink-pool 异常] 初始化创建数据库连接时发生异常！", e);
         }
-        if (this.config.getMinIdle() > 1) {
-            CompletableFuture.runAsync(this::createMinIdleConnections);
-        }
 
-        // 启动维持连接池最小闲置连接数的定时任务，对于较多的连接需要清除，对于较少的连接需要创建.
-        this.startKeepIdleConnectionsJob();
+        // 如果最小闲置数大于 1 的话，那么判断使用同步或异步的方式去初始化更多的初始空闲连接.
+        if (this.config.getMinIdle() > 1) {
+            if (this.config.isAsyncInitIdleConnections()) {
+                CompletableFuture.runAsync(this::createMinIdleConnections);
+            } else {
+                this.createMinIdleConnections();
+            }
+        }
     }
 
     /**

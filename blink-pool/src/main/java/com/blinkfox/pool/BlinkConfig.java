@@ -176,6 +176,16 @@ public class BlinkConfig {
     private long borrowTimeout = DEFAULT_BORROW_TIMEOUT;
 
     /**
+     * 是否开启异步初始化空闲的数据库连接，默认 true.
+     *
+     * <p>该配置项含义是：当创建数据库连接池时，如果能成功创建一个数据库连接，那么接下来要初始化创建的多个空闲连接，
+     * 将采用异步的方式进行创建，不会阻塞主流程，通常能加快连接池或者所在服务的启动速度.</p>
+     *
+     * @since 1.0.1
+     */
+    private boolean asyncInitIdleConnections = true;
+
+    /**
      * 检查配置信息是否正确，并做对应的初始化处理.
      */
     public void checkAndInit() {

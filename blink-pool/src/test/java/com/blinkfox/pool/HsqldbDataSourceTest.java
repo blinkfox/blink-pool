@@ -44,7 +44,7 @@ class HsqldbDataSourceTest {
 
         blinkDataSource = new BlinkDataSource(new BlinkConfig()
                 .setJdbcUrl(JDBC_URL)
-                .setDriverClassName(DRIVER));
+                .setAsyncInitIdleConnections(false));
         Assertions.assertEquals(10, blinkDataSource.getPool().getConnectionQueue().size());
     }
 
@@ -70,7 +70,8 @@ class HsqldbDataSourceTest {
                 .setJdbcUrl(JDBC_URL)
                 .setDriverClassName(DRIVER)
                 .setMinIdle(minIdle)
-                .setMaxPoolSize(maxSize));
+                .setMaxPoolSize(maxSize)
+                .setAsyncInitIdleConnections(false));
         Assertions.assertEquals(minIdle, database.getConfig().getMinIdle());
         Assertions.assertEquals(maxSize, database.getConfig().getMaxPoolSize());
         Assertions.assertEquals(minIdle, database.getCurrentPoolSize());

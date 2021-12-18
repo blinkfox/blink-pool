@@ -67,7 +67,8 @@ class PerformanceTest {
                 .setUsername(PostgresDataSourceTest.USERNAME)
                 .setPassword(PostgresDataSourceTest.PASSWORD)
                 .setMinIdle(MIN_IDLE)
-                .setMaxPoolSize(MAX_SIZE));
+                .setMaxPoolSize(MAX_SIZE)
+                .setAsyncInitIdleConnections(false));
         Assertions.assertFalse(dataSource.isClosed());
 
         // 模拟发起并发请求

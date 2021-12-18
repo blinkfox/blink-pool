@@ -52,7 +52,8 @@ class SybaseDataSourceTest {
                 .setUsername(USERNAME)
                 .setPassword(PASSWORD)
                 .setCheckInterval(30)
-                .setCheckSql(BlinkConfig.SIMPLE_CHECK_SQL));
+                .setCheckSql(BlinkConfig.SIMPLE_CHECK_SQL)
+                .setAsyncInitIdleConnections(false));
         log.info("创建 Sybase 数据库连接池完成，耗时:【{} ms】", System.currentTimeMillis() - startTime);
     }
 
