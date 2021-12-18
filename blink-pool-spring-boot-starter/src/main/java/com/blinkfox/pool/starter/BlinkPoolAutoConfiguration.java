@@ -66,7 +66,8 @@ public class BlinkPoolAutoConfiguration {
                 .setCheckInterval(this.blinkConfigProperties.getCheckInterval())
                 .setCheckTimeout(this.blinkConfigProperties.getCheckTimeout())
                 .setCheckSql(this.blinkConfigProperties.getCheckSql())
-                .setBorrowTimeout(this.blinkConfigProperties.getBorrowTimeout()));
+                .setBorrowTimeout(this.blinkConfigProperties.getBorrowTimeout())
+                .setAsyncInitIdleConnections(this.blinkConfigProperties.isAsyncInitIdleConnections()));
     }
 
 }
