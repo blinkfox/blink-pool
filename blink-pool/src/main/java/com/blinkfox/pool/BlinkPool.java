@@ -12,6 +12,8 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -52,6 +54,8 @@ class BlinkPool {
 
     /**
      * 连接池中连接的最后活动时间，包括了借用或归还等操作的最后操作时间，用于计算连接池中的连接是否闲置了较长时间.
+     *
+     * @since 1.0.1
      */
     @Getter
     private final AtomicLong lastActiveNanoTime;
@@ -74,6 +78,13 @@ class BlinkPool {
     private final ScheduledExecutorService scheduledExecutor;
 
     /**
+     * 用于判断是否可创建创建数据库连接时的锁.
+     *
+     * @since 1.0.1
+     */
+    private final Lock createConnLock;
+
+    /**
      * 构造方法.
      *
      * @param blinkConfig 连接池配置类 {@link BlinkPool} 的实例对象
@@ -83,6 +94,7 @@ class BlinkPool {
         this.stats = new PoolStatistics();
         this.borrowing = new LongAdder();
         this.lastActiveNanoTime = new AtomicLong(System.nanoTime());
+        this.createConnLock = new ReentrantLock();
         this.connectionQueue = new ArrayBlockingQueue<>(blinkConfig.getMaxPoolSize());
         this.scheduledExecutor = new ScheduledThreadPoolExecutor(
                 1, r -> new Thread(r, "blink-pool"),
@@ -90,7 +102,16 @@ class BlinkPool {
 
         // 先加载驱动类的 class，然后在初始化创建数据库连接池中的最小空闲连接.
         this.loadDriverClass();
-        this.createMinIdleConnections();
+
+        // 初始化创建一个连接，如果能创建成功，且最小闲置数大于 1 的话，为了加快连接池的创建和初始化，开启异步线程初始化更多的初始空闲连接.
+        try {
+            this.createBlinkConnectionIntoPool();
+        } catch (SQLException e) {
+            throw new BlinkPoolException("[blink-pool 异常] 初始化创建数据库连接时发生异常！", e);
+        }
+        if (this.config.getMinIdle() > 1) {
+            CompletableFuture.runAsync(this::createMinIdleConnections);
+        }
 
         // 启动维持连接池最小闲置连接数的定时任务，对于较多的连接需要清除，对于较少的连接需要创建.
         this.startKeepIdleConnectionsJob();
@@ -112,26 +133,29 @@ class BlinkPool {
      * 创建出最小可用的数据库连接数.
      */
     private void createMinIdleConnections() {
+        this.createConnLock.lock();
         try {
             while (this.connectionQueue.size() < this.config.getMinIdle()) {
                 this.createBlinkConnectionIntoPool();
             }
         } catch (SQLException e) {
             throw new BlinkPoolException("[blink-pool 异常] 创建数据库连接时发生异常！", e);
+        } finally {
+            this.createConnLock.unlock();
         }
     }
 
     /**
-     * 创建全新的数据库 JDBC 连接，并封装成 {@link BlinkConnection} 对象.
+     * 创建全新的数据库 JDBC 连接，并封装成 {@link BlinkConnection} 对象放入连接池中.
      *
      * <p>
-     *     如果当前使用中的或者连接池中的连接数已经大于等于了最大连接数，就不需要再创建数据库连接了.
+     *     如果当前已有的连接总数已经大于等于了最大连接数，就不需要再创建数据库连接了.
      *     然后，创建出一个数据库连接，并尝试将其放到连接池中，如果加入到连接池中失败就需要关闭该数据库连接.
      * </p>
      */
     private void createBlinkConnectionIntoPool() throws SQLException {
-        if (this.connectionQueue.size() < this.config.getMaxPoolSize()
-                && this.borrowing.intValue() < this.config.getMaxPoolSize()) {
+        // 如果当前所有连接总数都小于最大连接数，那么就创建新的数据库连接，并放到连接池中.
+        if ((this.connectionQueue.size() + this.borrowing.intValue()) < this.config.getMaxPoolSize()) {
             BlinkConnection connection = this.newBlinkConnection();
             if (!this.connectionQueue.offer(connection)) {
                 connection.closeQuietly();
@@ -172,29 +196,31 @@ class BlinkPool {
         // 先通过从连接池中非阻塞的获取连接，如果连接为空，说明连接池是空的，那么就判断当前的正在被使用的连接数是否超过了约定的最大连接数.
         BlinkConnection connection = this.connectionQueue.poll();
         if (connection == null) {
-            // 如果连接池是空的，且正在使用中的连接比最大连接数小，那么直接创建并返回新的数据库连接即可.
-            if (this.borrowing.intValue() < this.config.getMaxPoolSize()) {
-                connection = this.newBlinkConnection();
+            // 如果连接池是空的，且正在使用中的连接比最大连接数小，那么就尝试异步创建新的数据库连接即可.
+            if (this.borrowing.intValue() < this.config.getMaxPoolSize() && this.connectionQueue.isEmpty()) {
                 CompletableFuture.runAsync(this::createMinIdleConnections);
-                return connection;
             }
 
-            // 超过了最大连接数，那么就尝试获取连接，直到超时为止，如果最后获取的还是空的，那么就抛出异常.
+            // 超过了最大连接数，那么就尝试阻塞获取连接，直到超时为止，如果最后获取的还是空的，那么就抛出异常.
             connection = this.connectionQueue.poll(config.getBorrowTimeout(), TimeUnit.MILLISECONDS);
             if (connection == null) {
-                throw new SQLException("[blink-pool 异常] 从连接池中获取数据库连接已超时，建议优化慢 SQL 或者增大最大连接数的配置项!");
+                throw new SQLException("[blink-pool 异常] 从连接池中获取数据库连接已超时，建议调大最大连接数的配置项或者优化慢 SQL!");
             }
         }
 
-        // 如果连接是可用的有效的，就直接返回此连接.
+        // 判断连接是否有效之前，先将借用中的值 +1. 如果连接是可用的有效的，就直接返回此连接.
+        this.borrowing.increment();
         if (connection.isAvailable()) {
             return connection;
         }
 
-        // 如果检查出是无效连接了，就会关闭原连接，并创建一个新的连接.
+        // 如果检查出是无效连接了，借用中的值 -1,并记录无效连接数和关闭原连接，并尝试直接创建一个新的连接.
+        this.borrowing.decrement();
         this.stats.getInvalids().increment();
         connection.closeQuietly();
-        return this.newBlinkConnection();
+        connection = this.newBlinkConnection();
+        this.borrowing.increment();
+        return connection;
     }
 
     /**
@@ -208,6 +234,7 @@ class BlinkPool {
         // 如果连接池已被关闭，就直接关闭此额外的连接即可.
         if (this.closed) {
             connection.closeQuietly();
+            return;
         }
 
         // 归还连接，如果连接不能再归还到连接池中，说明了连接池已经满了，就直接关闭此连接.

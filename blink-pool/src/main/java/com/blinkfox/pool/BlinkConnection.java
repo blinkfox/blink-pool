@@ -101,9 +101,9 @@ public class BlinkConnection implements Connection {
             this.pool.getStats().getUsedSumNanoTime().add(diffNanoTime);
         }
 
-        // 归还连接到连接池中.
-        this.pool.getBorrowing().decrement();
+        // 归还连接到连接池中，并将借用数减 1.
         this.pool.returnConnection(this);
+        this.pool.getBorrowing().decrement();
     }
 
     /**
@@ -174,7 +174,12 @@ public class BlinkConnection implements Connection {
     private boolean doCheckValid() throws SQLException {
         String checkSql = this.config.getCheckSql();
         if (StringKit.isBlank(checkSql)) {
-            return !this.connection.isClosed() && this.connection.isValid(this.config.getCheckTimeout());
+            try {
+                return !this.connection.isClosed() && this.connection.isValid(this.config.getCheckTimeout());
+            } catch (Exception e) {
+                log.info("[blink-pool 警告] 执行检查连接是否有效时出现异常，将认为本连接已无效，异常原因: {}", e.getMessage());
+                return false;
+            }
         }
 
         // 模拟一次 SQL 查询，如果查询无任何异常，则视为有效，直接返回 true，否则返回 false.
@@ -184,7 +189,7 @@ public class BlinkConnection implements Connection {
             statement.close();
             return true;
         } catch (Exception e) {
-            log.warn("[blink-pool 警告] 执行检查连接是否有效的 SQL 失败，将认为本链接已无效，异常原因: {}", e.getMessage());
+            log.warn("[blink-pool 警告] 执行检查连接是否有效的 SQL 失败，将认为本连接已无效，异常原因: {}", e.getMessage());
             return false;
         }
     }

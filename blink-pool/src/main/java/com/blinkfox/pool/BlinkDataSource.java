@@ -64,18 +64,17 @@ public class BlinkDataSource implements DataSource, Closeable {
             throw new BlinkPoolException("[blink-pool 异常] 获取数据库连接的线程已被中断!", e);
         }
 
-        // 统计计算出借用连接所用的时间差，并将借用的连接数加 1.
-        long endNanoTime = System.nanoTime();
+        // 获取当前最新的时间，并将借用数 +1，
+        final long endNanoTime = System.nanoTime();
+        this.pool.getStats().getBorrows().increment();
+
+        // 然后统计计算出借用连接所用的时间差，并将借用的连接数加 1.
         long diffNanoTime = endNanoTime - startNanoTime;
         if (diffNanoTime > 0) {
             this.pool.getStats().getBorrowSumNanoTime().add(diffNanoTime);
         }
         connection.setLastBorrowNanoTime(endNanoTime);
         this.pool.getLastActiveNanoTime().lazySet(endNanoTime);
-
-        // 将正在使用的借用连接数加 1.
-        this.pool.getBorrowing().increment();
-        this.pool.getStats().getBorrows().increment();
 
         return connection;
     }

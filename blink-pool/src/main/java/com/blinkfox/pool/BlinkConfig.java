@@ -61,7 +61,7 @@ public class BlinkConfig {
     /**
      * 默认的检查连接是否有效的时间间隔，单位毫秒 (ms).
      */
-    public static final int DEFAULT_CHECK_INTERVAL = 2000;
+    public static final int DEFAULT_CHECK_INTERVAL = 5000;
 
     /**
      * 最小的最长连接存活时长，单位毫秒 (ms).
@@ -138,7 +138,7 @@ public class BlinkConfig {
     private long maxLifetime = DEFAULT_LIFE_TIME;
 
     /**
-     * 检查数据库连接是否有效的最少间隔时间，单位毫秒（ms），默认最少是间隔 2 秒钟，即: 2000 ms.
+     * 检查数据库连接是否有效的最少间隔时间，单位毫秒（ms），默认最少是间隔 5 秒钟，即: 5000 ms.
      *
      * <p>从连接池中获取连接时会检查该数据库连接是否仍然有效，
      * 由于每次检查时耗时较长，且大多数情况下都是有效的，为了优化性能，会隔一段时间才进行检查.</p>
