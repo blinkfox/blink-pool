@@ -4,7 +4,7 @@
 
 ## 💎 一、特性
 
-- 仅依赖 `slf4j`，非常的轻量级、高性能，且 jar 包仅 `22 KB`；
+- 仅依赖 `slf4j`，非常的轻量级、高性能，且 jar 包仅 `23 KB`；
 - 支持连接池基本的指标性能监控；
 - 原生支持 GraalVM 的 `native-image` 构建；
 - 须 Java 8 及以上，推荐用于微应用、云原生场景；
@@ -15,7 +15,7 @@
 <dependency>
     <groupId>com.blinkfox</groupId>
     <artifactId>blink-pool</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
@@ -53,7 +53,7 @@ try (Connection connection = dataSource.getConnection()) {
 <dependency>
     <groupId>com.blinkfox</groupId>
     <artifactId>blink-pool-spring-boot-starter</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
 </dependency>
 ```
 
