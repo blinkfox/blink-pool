@@ -96,9 +96,6 @@ class BlinkPool {
         this.lastActiveNanoTime = new AtomicLong(System.nanoTime());
         this.createConnLock = new ReentrantLock();
         this.connectionQueue = new ArrayBlockingQueue<>(blinkConfig.getMaxPoolSize());
-        this.scheduledExecutor = new ScheduledThreadPoolExecutor(
-                1, r -> new Thread(r, "blink-pool"),
-                (r, e) -> log.warn("[blink-pool 警告] 已经启动或运行了用于维持空闲连接的定时任务!"));
 
         // 先加载驱动类的 class，然后在初始化创建数据库连接池中的最小空闲连接.
         this.loadDriverClass();
@@ -106,7 +103,11 @@ class BlinkPool {
         // 初始化连接池中的空闲连接.
         this.initCreateIdleConnections();
 
-        // 启动维持连接池最小闲置连接数的定时任务，对于较多的连接需要清除，对于较少的连接需要创建.
+        // 创建最小连接成功之后，再创建定时任务的线程池，
+        // 用于维持连接池最小闲置连接数的定时任务，对于较多的连接需要清除，对于较少的连接需要创建.
+        this.scheduledExecutor = new ScheduledThreadPoolExecutor(
+                1, r -> new Thread(r, "blink-pool"),
+                (r, e) -> log.warn("[blink-pool 警告] 已经启动或运行了用于维持空闲连接的定时任务!"));
         this.startKeepIdleConnectionsJob();
     }
 

@@ -6,7 +6,7 @@
 
     <groupId>com.blinkfox</groupId>
     <artifactId>blink-pool</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2-SNAPSHOT</version>
 
     <name>blink-pool</name>
     <description>这是一个非常轻量级的、高性能的 JDBC 数据库连接池工具库，用于原生支持 GraalVM 的 native-image 构建。</description>
@@ -45,7 +45,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.32</version>
+            <version>1.7.36</version>
         </dependency>
 
         <!-- 下面的依赖包不会传递依赖下去，仅编译时需要. -->
@@ -60,7 +60,7 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-simple</artifactId>
-            <version>1.7.32</version>
+            <version>1.7.36</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -108,7 +108,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.3.0</version>
+            <version>42.3.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -120,13 +120,13 @@
         <dependency>
             <groupId>com.blinkfox</groupId>
             <artifactId>stalker</artifactId>
-            <version>1.2.2</version>
+            <version>1.2.3</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>5.8.1</version>
+            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -136,7 +136,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
+                <version>3.10.0</version>
                 <configuration>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -173,7 +173,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>8.41.1</version>
+                        <version>9.3</version>
                     </dependency>
                 </dependencies>
                 <configuration>
