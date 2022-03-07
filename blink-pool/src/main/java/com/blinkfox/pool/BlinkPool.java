@@ -108,7 +108,13 @@ class BlinkPool {
         this.scheduledExecutor = new ScheduledThreadPoolExecutor(
                 1, r -> new Thread(r, "blink-pool"),
                 (r, e) -> log.warn("[blink-pool 警告] 已经启动或运行了用于维持空闲连接的定时任务!"));
-        this.startKeepIdleConnectionsJob();
+        try {
+            this.startKeepIdleConnectionsJob();
+        } catch (Exception e) {
+            // 如果启动失败，则直接关闭 executor，并抛出异常.
+            this.scheduledExecutor.shutdownNow();
+            throw e;
+        }
     }
 
     /**
