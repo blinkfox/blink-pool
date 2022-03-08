@@ -15,7 +15,7 @@
 <dependency>
     <groupId>com.blinkfox</groupId>
     <artifactId>blink-pool</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
@@ -53,7 +53,7 @@ try (Connection connection = dataSource.getConnection()) {
 <dependency>
     <groupId>com.blinkfox</groupId>
     <artifactId>blink-pool-spring-boot-starter</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
